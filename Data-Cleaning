@@ -1,0 +1,101 @@
+-- data cleaning 
+create DATABASE toy_sales
+use toy_sales
+-- inventory table
+select * from inventory
+
+select count(*) from inventory
+
+select count(distinct(store_id))  from inventory 
+select count((product_id)) from inventory
+select count(stock_on_hand) from inventory where stock_on_hand=0
+select count(stock_on_hand) from inventory where stock_on_hand<0
+
+SELECT 
+    Store_ID,
+    COUNT(DISTINCT Product_ID) AS total_products,
+    SUM(Stock_On_Hand) AS total_stock,
+    AVG(Stock_On_Hand) AS avg_stock,
+    MIN(Stock_On_Hand) AS min_stock,
+    MAX(Stock_On_Hand) AS max_stock,
+    COUNT(CASE WHEN Stock_On_Hand = 0 THEN 1 END) AS out_of_stock_count
+FROM inventory
+GROUP BY Store_ID;
+-- table store
+select * from stores
+select count(*) from stores
+select count(distinct(store_id)) ,count(distinct(store_name)) from stores
+-- Check current values
+SELECT DISTINCT Store_Location, COUNT(*) AS count
+FROM stores
+GROUP BY Store_Location;
+-- check duplicates
+select store_id from (select store_id ,
+ROW_NUMBER() over(partition by store_id  ORDER BY store_id) as ranked 
+from stores ) as n where ranked=2
+-- unique stores name 
+SELECT Store_Name, COUNT(*) as count
+FROM Stores
+GROUP BY Store_Name
+HAVING COUNT(*) > 1;
+
+ALTER TABLE stores
+MODIFY COLUMN store_open_date DATE;
+-- products
+select * from  products
+
+select count(*) from products
+
+select count(distinct(product_name)) from products
+--Check Duplicates
+select product_id from (select product_id ,
+row_number() over(partition by product_id order by product_id) 
+as ranked from products) as n
+where ranked=2 
+
+select product_price ,product_cost from products 
+where product_price<0 and product_cost<0
+
+UPDATE products 
+SET product_cost = REPLACE(product_cost, '$', ''),
+    product_price = REPLACE(product_price, '$', '');
+
+
+UPDATE products 
+SET product_cost = TRIM(product_cost),
+    product_price = TRIM(product_price);
+    
+ALTER TABLE products 
+MODIFY COLUMN product_cost DECIMAL(10, 2),
+MODIFY COLUMN product_price DECIMAL(10, 2);   
+   
+SELECT product_id , product_cost, product_price
+FROM products
+WHERE product_cost > product_price;
+
+-- sales table 
+select * from sales
+select count(*) from sales
+
+alter table sales 
+modify date date
+select count(distinct(sale_id)) from sales
+
+SELECT *
+FROM (SELECT *,
+ROW_NUMBER() OVER (PARTITION BY sale_id ORDER BY sale_id ASC) as occurence
+    FROM sales
+) AS temp
+WHERE occurence > 1; 
+-- check null values
+SELECT 
+    Sale_ID,Date,Store_ID,Product_ID,Units FROM Sales
+WHERE Sale_ID IS NULL
+   OR Date IS NULL
+   OR Store_ID IS NULL
+   OR Product_ID IS NULL
+   OR Units IS NULL;
+   
+SELECT Sale_ID, Date, Units
+FROM Sales
+WHERE Units <= 0;
